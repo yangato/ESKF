@@ -1,20 +1,21 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.28)
 project(eskf)
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  geometry_msgs
-  sensor_msgs
-  message_filters
-  message_generation
-  eigen_conversions
-  mavros_msgs
-)
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 find_package(cmake_modules)
 find_package(Eigen3 REQUIRED)
 
-catkin_package(
-  CATKIN_DEPENDS message_runtime
+include_directories(
+  include
+  include/eskf
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 # include headers
@@ -26,29 +27,76 @@ include_directories(
   include/eskf
 )
 
-# build shared library
-add_library(ESKF
+# ---- Core filter library (your ESKF) ----
+add_library(ESKF SHARED
   src/ESKF.cpp
 )
-
-set(RELEVANT_LIBRARIES
-  ESKF
-  ${catkin_LIBRARIES}
-  ${mavros_LIBRARIES}
+target_include_directories(ESKF PUBLIC
+  include
+  include/eskf
+  ${EIGEN3_INCLUDE_DIRS}
+)
+ament_target_dependencies(ESKF
+  rclcpp
 )
 
-# rigorous error checking
-add_definitions("-Wall -Werror -O3 -std=c++11")
-
-# build main filter
-add_executable(${PROJECT_NAME}
-  src/eskf.cpp
+# ---- Node library (ROS 2 node class) ----
+add_library(eskf_node_lib SHARED
   src/Node.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${RELEVANT_LIBRARIES})
-
-# ensures messages are generated before hand
-add_dependencies(${PROJECT_NAME}
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS}
+target_include_directories(eskf_node_lib PUBLIC
+  include
+  include/eskf
+  ${EIGEN3_INCLUDE_DIRS}
 )
+ament_target_dependencies(eskf_node_lib
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  std_msgs
+)
+target_link_libraries(eskf_node_lib
+  ESKF
+)
+
+# ---- Executable (contains main()) ----
+# Keep src/eskf.cpp as your entry point; it should create rclcpp::Node/Spin.
+add_executable(eskf_node
+  src/eskf.cpp
+)
+ament_target_dependencies(eskf_node
+  rclcpp
+)
+target_link_libraries(eskf_node
+  eskf_node_lib
+)
+
+# ---- Install ----
+install(TARGETS
+  ESKF
+  eskf_node_lib
+  eskf_node
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+install(DIRECTORY include/
+  DESTINATION include
+)
+
+# ---- Export for downstream packages ----
+ament_export_include_directories(include include/eskf)
+ament_export_dependencies(
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  Eigen3
+)
+# Install launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch)
+ament_package()

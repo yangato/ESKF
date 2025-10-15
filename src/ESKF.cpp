@@ -1,7 +1,11 @@
+/****
+Seems to be fine with modern c standard no real updates needed here!
+
+*/
 #ifndef NDEBUG
 #define NDEBUG
 #endif
-
+#include<cstdint>
 #include <ESKF.hpp>
 #include <cmath>
 

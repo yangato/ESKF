@@ -1,8 +1,9 @@
 #ifndef ESKF_H_
 #define ESKF_H_
-
+// CLEAR OF ROS2 ERRORS
 #include <common.h>
 #include <RingBuffer.hpp>
+#include<cstdint>
 
 namespace eskf {
 

@@ -1,5 +1,7 @@
+// CLEAR OF ROS2 ERRORS
 #ifndef COMMON_H_
 #define COMMON_H_
+#include<cstdint>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

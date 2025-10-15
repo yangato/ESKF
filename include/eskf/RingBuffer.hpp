@@ -2,6 +2,7 @@
 #define RINGBUFFER_H_
 
 #include <cstdlib>
+#include<cstdint>
 
 namespace eskf {
 
